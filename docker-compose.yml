@@ -1,0 +1,60 @@
+version: "3.8"
+services:
+
+  bebacocw-app:
+    container_name: bebacocw-app
+    build:
+      context: .
+      dockerfile: app.Dockerfile
+    restart: always
+    volumes:
+      - ./static:/app/static
+      - ./media:/app/media
+    ports:
+      - "7111:7111"
+    env_file:
+      - .env
+
+  bebacocw-nginx:
+    container_name: bebacocw-nginx
+    build:
+      context: .
+      dockerfile: nginx.Dockerfile
+    volumes:
+      - ./static:/static
+      - ./media:/app/media
+    ports:
+      - "7777:80"
+    depends_on:
+      - bebacocw-app
+
+  bebacocw-celery-worker:
+    container_name: bebacocw-celery-worker
+    build:
+      context: .
+      dockerfile: celery.Dockerfile
+    command: celery --app server worker --loglevel=info --concurrency=50
+    volumes:
+      - ./:/app
+    env_file:
+      - .env
+
+  bebacocw-celery-flower:
+    container_name: bebacocw-celery-flower
+    image: mher/flower
+    environment:
+      - CELERY_BROKER_URL=redis://:sadhjbas321oa92hcakjbca78@164.68.102.94:6379/0
+      - FLOWER_PORT=8888
+    ports:
+      - "8888:8888"
+
+  bebacocw-celery-beat:
+    container_name: bebacocw-celery-beat
+    build:
+      context: .
+      dockerfile: celery.Dockerfile
+    command: celery --app server beat --loglevel=info
+    volumes:
+      - ./:/app
+    env_file:
+      - .env
